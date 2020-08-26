@@ -1,49 +1,13 @@
-version: 2
-jobs:
-  feature_deploy:
-    docker:
-      - image: dott/circleci:pyang
-        auth:
-          username: dott
-          password: $DOCKERHUB_PASSWORD
-    steps:
-      - checkout
-      - run: "npm install -g n"
-      - run: "n 12"
-      - run: "node -v"
-      - run: "pip install -r cryo_scripts/requirements.txt"
-      - run: "echo 'export PATH=$HOME/google-cloud-sdk/bin:$PATH' >> $BASH_ENV"
-      - run: "source ~/.bashrc && ./cryo circle -fv ${CIRCLE_BUILD_NUM}"
-      - run: "gcloud config set project status-checker-phase5-dev"
-      # Channge GAE instance class.
-      - run: "sed -i -e \"s/^instance_class:.*$/instance_class: F1/g\" app.yaml"
-      - run: "gcloud --quiet app deploy app.yaml cron.yaml index.yaml queue.yaml -v ${CIRCLE_BUILD_NUM} --no-promote"
-      - run: "chmod +x .circleci/comment_feature_deploy_to_gh.sh && ./.circleci/comment_feature_deploy_to_gh.sh"
-  # release_deploy:
-  #   docker:
-  #     - image: dott/circleci:pyang
-  #       auth:
-  #         username: dott
-  #         password: $DOCKERHUB_PASSWORD
-  #   steps:
-  #     - checkout
-  #     - run: "pip install -r cryo_scripts/requirements.txt"
-  #     - run: "source ~/google-cloud-sdk/path.bash.inc && source ~/google-cloud-sdk/completion.bash.inc"
-  #     - run: "source ~/.bashrc && ./cryo deploy staging _ -fv --no-browse"
-  #     - run: "chmod +x .circleci/comment_release_deploy_to_gh.sh && ./.circleci/comment_release_deploy_to_gh.sh"
+# Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+# Use a package of configuration called an orb.
+orbs:
+  # Declare a dependency on the welcome-orb
+  welcome: circleci/welcome-orb@0.4.1
+# Orchestrate or schedule a set of jobs
 workflows:
-  version: 2
-  build:
+  # Name the workflow "welcome"
+  welcome:
+    # Run the welcome/run job in its own container
     jobs:
-      - feature_deploy:
-          filters:
-            branches:
-              only:
-                - /epic\/.*/
-                - /feature\/.*/
-                - /hotfix\/.*/
-      # - release_deploy:
-      #     filters:
-      #       branches:
-      #         only:
-      #           - /release\/.*/
+      - welcome/run
